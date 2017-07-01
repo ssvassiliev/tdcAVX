@@ -111,14 +111,13 @@ char Transition[MAX_NFILES][4];
 int main(int argc, char** argv) {
   
   int i, NCubes;
-  float cache_size;
+  int cache_size;
   // TIMING 
   struct  timeb start, end;
   double elapsed_t;
   int c;
   char *cubinfo = "cube.inf";  
   Qcutoff = 0.0;
-  cache_size = 1.6;
 
   char usage[]="\n"
     " -------------------------------------------------------------------\n"
@@ -157,9 +156,12 @@ int main(int argc, char** argv) {
 	}
     }
 
-  cache_size*=1e6;
-  printf("CPU cache = %g MB\n",cache_size*1e-6);
-
+  // Get CPU L3 cache size
+  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
+  FILE *fp=fopen("cache_size","rt");
+  fscanf(fp,"%i",&cache_size);
+  fclose(fp);
+  system("rm -f cache_size");
   NCubes=ReadCubeInfo(cubinfo);
   
   // Check if dipole moments are known
@@ -477,9 +479,9 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
 {
   // Returns Coulomb interaction between 2 TDC
   // TDC are  stored in global structures cube[0] and cube[1]
-  long i,j,h,m,c2count;
-  double R, VC,VCexp,VC_OVL,VC_OVLexp, kappa,VDD, VDDexp, exp_correct0,exp_correct1;
-  int id, nthreads,cache_blocks;
+  long i, j, h, m, c2count;
+  double R, VC,VCexp,VC_OVL,VC_OVLexp, kappa,VDD, VDDexp, exp_correct0, exp_correct1;
+  int id, nthreads, cache_blocks;
   double dR[3], dRn[3], Dipole0[3], Dipole1[3], mu0, mu1, dmu0[3], dmu1[3];  
  __m256 r_vec, result, vcovlps, vcps;
  __m256 R_cutoff_check, R_CUTOFF;
@@ -492,18 +494,13 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
  R_CUTOFF = _mm256_rcp_ps(_mm256_set1_ps(Rcutoff));
  VC = VC_OVL = 0;
  
- cache_blocks=cube[C2].v_count*4*4*4/cache_size;
- 
+ cache_blocks=cube[C2].v_count/cache_size;
+
  if(cache_blocks==0)
    cache_blocks++;
- c2count=cube[C2].v_count/cache_blocks;
- // 120 cube  8  blocks 441
- // 120 cube 10  blocks 425
- // 120 cube 11  blocks 421
- // 120 cube 12  blocks 420.4
- // 120 cube 13  blocks 421.3
+ c2count=cube[C2].v_count/(cache_blocks);
 
- fprintf(stderr,"Dividing cube 2 in %i blocks\n",cache_blocks);
+ fprintf(stderr,"Cube2: N vectors = %i\nCPU cache size = %i KB\nN blocks =  %i\n",cube[C2].v_count, cache_size,cache_blocks);
  
  // Take care of the last pack of cube 2, which may be incomplete
  // If any of X coordinates in this pack are zeros 
@@ -526,7 +523,7 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
    
      for(h=0;h<cache_blocks;h++) 
      {
-      fprintf(stderr,"Block %li Thread: %i\n",h,id);fflush(stderr);
+      fprintf(stderr,"Block %li Thread: %i\r",h,id);fflush(stderr);
         for(i=id; i<cube[C1].v_count;i+=nthreads)
         {
              tmpQ[0] = _mm256_broadcast_ss(&cube[C1].rQ[i][0]);

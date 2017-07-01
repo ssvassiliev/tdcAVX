@@ -107,8 +107,7 @@ char Transition[MAX_NFILES][4];
 
 int main(int argc, char** argv) {
   
-  int i, NCubes;
-  float cache_size;
+  int i, NCubes, cache_size;
   // TIMING 
   struct  timeb start, end;
   double elapsed_t;
@@ -153,9 +152,12 @@ int main(int argc, char** argv) {
 	  exit(0);
 	}
     }
-
-  cache_size*=1e6;
-  printf("CPU cache = %g MB\n",cache_size*1e-6);
+// Get CPU L3 cache size
+  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
+  FILE *fp=fopen("cache_size","rt");
+  fscanf(fp,"%i",&cache_size);
+  fclose(fp);
+  system("rm -f cache_size");
 
   NCubes=ReadCubeInfo(cubinfo);
   
@@ -492,19 +494,15 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
  R_CUTOFF = _mm_set1_ps(Rcutoff);
  R_CUTOFF = _mm_rcp_ps(R_CUTOFF);
  
- cache_blocks=cube[C2].v_count*4*4*4/cache_size;
+ cache_blocks=cube[C2].v_count*0.5/cache_size;
  
  if(cache_blocks==0)
    cache_blocks++;
  c2count=cube[C2].v_count/cache_blocks;
- // 120 cube  8  blocks 441
- // 120 cube 10  blocks 425
- // 120 cube 11  blocks 421
- // 120 cube 12  blocks 420.4
- // 120 cube 13  blocks 421.3
 
- fprintf(stderr,"Dividing cube 2 in %i blocks\n",cache_blocks);
+ fprintf(stderr,"Cube2: N vectors = %i\nCPU cache size = %i KB\nN blocks =  %i\n",cube[C2].v_count, cache_size,cache_blocks);
  
+
  // Take care of the last pack of cube 2, which may be incomplete
  // If any of X coordinates in this pack are zeros 
  // we set them to 1.0f to avoid division by zero.
@@ -526,7 +524,7 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
    
      for(h=0;h<cache_blocks;h++) 
      {
-      fprintf(stderr,"Block %li Thread: %i\n",h,id);fflush(stderr);
+      fprintf(stderr,"Block %li Thread: %i\r",h,id);fflush(stderr);
         for(i=id; i<cube[C1].v_count;i+=nthreads)
         {
            _MM_UNPACK4_PS(cube[C1].rQ[i],tmpQ[0],tmpQ[1],tmpQ[2],tmpQ[3]);
