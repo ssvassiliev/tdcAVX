@@ -1,2 +1,1 @@
-
-Stub
+# Transition density cube AVX #S
