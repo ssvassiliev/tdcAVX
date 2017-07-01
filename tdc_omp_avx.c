@@ -59,21 +59,6 @@ inline static void Line(int);
 #define MAX_NFILES 2
 #define NCUB 2
 
-// Takes vector (in) and unpacks each of its components
-// into separate vectors (out0 ...out3)
-#define _MM_UNPACK4_PS(in, out0, out1, out2, out3) {\
-         __m256 tmp       ;                         \
-                                                    \
-        tmp  = _mm_unpackhi_ps(in,in);              \
-        out2 = _mm_unpacklo_ps(tmp,tmp);	    \
-        out3 = _mm_unpackhi_ps(tmp,tmp);            \
- 	                                            \
-        tmp   = _mm_unpacklo_ps(in,in);             \
-        out0 = _mm_unpacklo_ps(tmp,tmp);            \
-        out1 = _mm_unpackhi_ps(tmp,tmp);            \
-}                                                   \
-
-
 /************************** GLOBAL VARIABLES **********************/
 struct GAU_CUBE { /*GAUSSIAN CUBE */
   /************* VARIABLES  READ FROM THE CUBE FILE ***************/
@@ -127,15 +112,22 @@ int main(int argc, char** argv) {
     " * Optional arguments:                                             *\n" 
     " * -f: name of the file containing cube information                *\n"
     " * -c: charge density cutoff value                                 *\n"
-    " * -s: CPU L2+L3 cache size (MB) approximate parameter!            *\n"
+    " * -s: CPU L2+L3 cache size (KB), approximate parameter!            *\n"
     " -------------------------------------------------------------------\n"
     "  Defaults: -f = cube.inf \n"                                       
     "            -c = 0.0     \n"           
-    "            -s = 1.6     \n"           
+    "            -s = automatic     \n"           
     "  To run on n threads set OMP_NUM_THREADS=n \n"            
     " ------------------------------------------------------------------\n\n";
-  
 
+// Get CPU L3 cache size
+  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
+  FILE *fp=fopen("cache_size","rt");
+  fscanf(fp,"%i",&cache_size);
+  fclose(fp);
+  system("rm -f cache_size");
+  NCubes=ReadCubeInfo(cubinfo);
+  
  opterr=0;
   while( (c=getopt(argc,argv,"c:f:s:h")) != -1) 
     {
@@ -156,13 +148,6 @@ int main(int argc, char** argv) {
 	}
     }
 
-  // Get CPU L3 cache size
-  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
-  FILE *fp=fopen("cache_size","rt");
-  fscanf(fp,"%i",&cache_size);
-  fclose(fp);
-  system("rm -f cache_size");
-  NCubes=ReadCubeInfo(cubinfo);
   
   // Check if dipole moments are known
   fprintf(stderr,"Experimental dipole moments:\n");
