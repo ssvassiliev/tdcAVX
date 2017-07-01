@@ -1,1 +1,1 @@
-# Transition density cube AVX #S
+# Transition density cube AVX #
