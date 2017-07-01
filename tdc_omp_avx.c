@@ -5,6 +5,9 @@
 // ICC FLAGS: -openmp -xHost 
 /*-----------------------------------------------------------------*/
 // Changes:
+// June 2017
+// Rewritten to support AVX instructions set
+// Automatic CPU cache size determination
 /******* July 2008 *******/
 // added check for noncollinear cubes
 // renamed some variables
