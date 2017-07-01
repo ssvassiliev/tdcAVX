@@ -38,8 +38,7 @@
 #include <stdlib.h>
 #include <sys/timeb.h>
 #include <unistd.h>
-#include <xmmintrin.h>
-#include <pmmintrin.h>
+#include <immintrin.h>
 
 /******** Function prototypes ************/
 
@@ -534,7 +533,7 @@ double CalcCoulombCoupling(int C1, int C2, int cache_size)
            _MM_UNPACK4_PS(cube[C1].rX[i],tmpX[0],tmpX[1],tmpX[2],tmpX[3]);
            _MM_UNPACK4_PS(cube[C1].rY[i],tmpY[0],tmpY[1],tmpY[2],tmpY[3]);
            _MM_UNPACK4_PS(cube[C1].rZ[i],tmpZ[0],tmpZ[1],tmpZ[2],tmpZ[3]);
-  
+
            for(m=0; m<4; m++)
            {
               vcps = vcovlps = _mm_setzero_ps();
