@@ -128,10 +128,16 @@ int main(int argc, char** argv) {
     " -------------------------------------------------------------------\n"
     "  Defaults: -f = cube.inf \n"                                       
     "            -c = 0.0     \n"           
-    "            -s = 1.6     \n"           
+    "            -s = automatic    \n"           
     "  To run on n threads set OMP_NUM_THREADS=n \n"            
     " ------------------------------------------------------------------\n\n";
   
+// Get CPU L3 cache size
+  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
+  FILE *fp=fopen("cache_size","rt");
+  fscanf(fp,"%i",&cache_size);
+  fclose(fp);
+  system("rm -f cache_size");
 
  opterr=0;
   while( (c=getopt(argc,argv,"c:f:s:h")) != -1) 
@@ -152,12 +158,6 @@ int main(int argc, char** argv) {
 	  exit(0);
 	}
     }
-// Get CPU L3 cache size
-  system("grep 'cache size' /proc/cpuinfo | head -n 1 | awk '{print $4}' > cache_size");
-  FILE *fp=fopen("cache_size","rt");
-  fscanf(fp,"%i",&cache_size);
-  fclose(fp);
-  system("rm -f cache_size");
 
   NCubes=ReadCubeInfo(cubinfo);
   
