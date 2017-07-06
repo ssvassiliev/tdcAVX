@@ -1,4 +1,4 @@
-# Transition density cube #
+# Vectorized  multithreaded transition density cube algorithm #
 
 Calculates the Coulombic portion of the electronic coupling between two molecules.  
 
